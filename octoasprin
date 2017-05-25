@@ -1,0 +1,76 @@
+#!/bin/bash
+#set -vx
+
+API_KEY=`cat ~/.octoasprin.conf | jq --raw-output '.[0].OctoAPI_KEY'`
+API_URL=`cat ~/.octoasprin.conf | jq --raw-output '.[0].OctoPrint_URL'`
+MINUTES=`cat ~/.octoasprin.conf | jq --raw-output '.[0].TimeoutMinutes'`
+
+api_get() {
+  curl -s --connect-timeout 5 -m 5 -H "X-Api-Key: $API_KEY" "$API_URL/$1"
+  echo
+}
+
+api_post() {
+  curl -s --connect-timeout 5 -m 5 -H "X-Api-Key: $API_KEY" -H "Content-Type: application/json" -X POST -d "$2" "$API_URL/$1"
+}
+
+get_state(){
+  api_get api/connection | jq --raw-output '. [].state | select(length>0)'
+}
+
+get_tool_target() {
+  api_get api/printer/tool | jq --raw-output '. [].target'
+}
+
+get_bed_target() {
+  api_get api/printer/bed | jq --raw-output '. [].target'
+}
+
+set_tool_target() {
+  api_post api/printer/tool '{ "command": "target", "targets": { "tool0": '$1' } }'
+}
+
+set_bed_target() {
+  api_post api/printer/bed '{ "command": "target", "target": '$1' }'
+}
+
+while true
+do
+  declare -a TOOL_TEMP=( $(for i in $(seq 1 $MINUTES); do echo 000; done) )
+  declare -a BED_TEMP=( $(for i in $(seq 1 $MINUTES); do echo 000; done) )
+  while [ `get_state` == "Operational" ]
+  do
+    if [ "$(get_tool_target)" -gt 1 ];
+    then
+      if [ ${#TOOL_TEMP[@]} -gt 4 ];
+      then
+        TOOL_TEMP=(${TOOL_TEMP[@]:0:0} ${TOOL_TEMP[@]:$((0 + 1))})
+        TOOL_TEMP+=( $(get_tool_target) );
+        if [ ${TOOL_TEMP[0]} -ne 0 ];
+        then
+          set_tool_target 0;
+          declare -a TOOL_TEMP=( $(for i in $(seq 1 $MINUTES); do echo 000; done) );
+        fi
+      else
+        TOOL_TEMP+=( $(get_tool_target) );
+      fi
+    fi
+    if [ "$(get_bed_target)" -gt 1 ];
+    then
+      if [ ${#BED_TEMP[@]} -gt 4 ];
+      then
+        BED_TEMP=(${BED_TEMP[@]:0:0} ${BED_TEMP[@]:$((0 + 1))})
+        BED_TEMP+=( $(get_bed_target) );
+        if [ ${BED_TEMP[0]} -ne 0 ];
+        then
+          set_bed_target 0;
+          declare -a BED_TEMP=( $(for i in $(seq 1 $MINUTES); do echo 000; done) );
+        fi
+      else
+        BED_TEMP+=( $(get_bed_target) );
+      fi
+    fi
+    echo -ne "TOOL: ${TOOL_TEMP[@]} | BED: ${BED_TEMP[@]}"\\r
+    sleep 60
+  done
+done
