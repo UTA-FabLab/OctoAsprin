@@ -1,9 +1,12 @@
 #!/bin/bash
 #set -vx
 
-API_KEY=`cat ~/.octoasprin.conf | jq --raw-output '.[0].OctoAPI_KEY'`
-API_URL=`cat ~/.octoasprin.conf | jq --raw-output '.[0].OctoPrint_URL'`
-MINUTES=`cat ~/.octoasprin.conf | jq --raw-output '.[0].TimeoutMinutes'`
+rm -rf /home/pi/OctoAsprin/octoasprin.pid
+echo $! > /home/pi/OctoAsprin/octoasprin.pid
+
+API_KEY=`cat /home/pi/.octoasprin.conf | jq --raw-output '.[0].OctoAPI_KEY'`
+API_URL=`cat /home/pi/.octoasprin.conf | jq --raw-output '.[0].OctoPrint_URL'`
+MINUTES=`cat /home/pi/.octoasprin.conf | jq --raw-output '.[0].TimeoutMinutes'`
 
 api_get() {
   curl -s --connect-timeout 5 -m 5 -H "X-Api-Key: $API_KEY" "$API_URL/$1"
