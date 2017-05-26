@@ -41,7 +41,7 @@ while true
 do
   declare -a TOOL_TEMP=( $(for i in $(seq 1 $MINUTES); do echo 000; done) )
   declare -a BED_TEMP=( $(for i in $(seq 1 $MINUTES); do echo 000; done) )
-  while [ `get_state` == "Operational" ]
+  while [ $(get_state) == "Operational" ]
   do
     if [ "$(get_tool_target)" -gt 1 ];
     then
