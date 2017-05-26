@@ -1,13 +1,13 @@
 [Unit]
-Description=OctoAsprin Daemon
+Description=OctoAspirin Daemon
 After=syslog.target octoprint.service
 
 [Service]
 Type=forking
-PIDFILE=/home/pi/OctoAsprin/octoasprin.pid
+PIDFILE=/home/pi/OctoAspirin/octoaspirin.pid
 
 ExecStartPre=/bin/rm -f $PIDFILE
-ExecStart=/home/pi/OctoAsprin/octoasprin --daemon --pidfile $PIDFILE
+ExecStart=/home/pi/OctoAspirin/octoaspirin --daemon --pidfile $PIDFILE
 Restart=on-abort
 
 [Install]
